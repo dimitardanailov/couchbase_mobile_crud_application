@@ -76,6 +76,12 @@ public class CouchbaseMainActivity extends ActionBarActivity {
             // Retrieve Document
             retrieveDocument(documentID);
             
+            // Update a document
+            updateDocument(documentID);
+            
+            // Delete document
+            deleteDocument(documentID);
+
         } catch (CouchbaseLiteException e) {
             Log.e(TAG, "Cannot get database");
             return;
@@ -171,5 +177,53 @@ public class CouchbaseMainActivity extends ActionBarActivity {
         Log.d(TAG, "retrievedDocument=" + String.valueOf(retrievedDocument.getProperties()));
         
         return retrievedDocument;
+    }
+
+    /**
+     * When a document is updated, Couchbase Lite creates a new revision of the document that 
+     * contains a new revision identifier in the _rev property. The document identifier in _id always remains the same.
+     * @param documentID
+     */
+    private void updateDocument(String documentID) {
+        // retrieve the document from the database
+        Document retrievedDocument = retrieveDocument(documentID);
+
+        /**
+         * The code first makes a new HashMap object and copies the existing properties of retrievedDocument into it. 
+         * Working on a copy of the document properties is helpful, 
+         * because to update a document successfully you need to include the current revision identifier. 
+         * Then the code modifies the value of the message key and adds a new key, temperature.
+         */
+        Map<String, Object> updatedProperties = new HashMap<String, Object>();
+        updatedProperties.putAll(retrievedDocument.getProperties());
+        updatedProperties.put ("message", "We're having a heat wave!");
+        updatedProperties.put ("temperature", "95");
+
+        try {
+            // Put document context in our database document
+            retrievedDocument.putProperties(updatedProperties);
+            Log.d(TAG, "updated retrievedDocument=" + String.valueOf(retrievedDocument.getProperties()));
+        } catch (CouchbaseLiteException e) {
+            Log.e (TAG, "Cannot update document", e);
+        }
+    }
+
+    /**
+     * The document is deleted by calling the delete() method on retrievedDocument.
+     * @param documentID
+     */
+    private void deleteDocument(String documentID) {
+        // retrieve the document from the database
+        Document retrievedDocument = retrieveDocument(documentID);
+
+        // delete the document
+        try {
+            retrievedDocument.delete();
+            
+            // Then to verify the deletion, it logs the value returned by the isDeleted() method.
+            Log.d (TAG, "Deleted document, deletion status = " + retrievedDocument.isDeleted());
+        } catch (CouchbaseLiteException e) {
+            Log.e (TAG, "Cannot delete document", e);
+        }
     }
 }
